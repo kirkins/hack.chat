@@ -1,4 +1,9 @@
-[![hack.chat screenshot](https://raw.githubusercontent.com/AndrewBelt/hack.chat/master/screenshot.png)](https://hack.chat/)
+### Hack.chat.games MOD
+* `adds real-time gaming in chat room`
+* `currently only tic-tac-toe (chess soon?)`
+* `hover on right side and click another user's name to start game`
+
+[![hack.chat screenshot](https://raw.githubusercontent.com/kirkins/hack.chat.games/master/screenshot.png)](https://youtu.be/NwusOLDp60s?t=5s)
 
 ## Local install
 
@@ -6,7 +11,7 @@
 
 node v0.12 or higher is required to run the server.
 
-* `git clone https://github.com/AndrewBelt/hack.chat.git`
+* `git clone https://github.com/kirkins/hack.chat.games.git`
 * `cd hack.chat`
 * `npm install`
 * Copy `config-sample.json` to `config.json` and edit if needed.
