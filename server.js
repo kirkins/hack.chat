@@ -72,6 +72,7 @@ function send(data, client) {
 	data.time = Date.now()
 	try {
 		if (client.readyState == ws.OPEN) {
+			console.log(JSON.stringify(data))
 			client.send(JSON.stringify(data))
 		}
 	}
@@ -359,8 +360,18 @@ var COMMANDS = {
 		var text = String(args.text)
 		broadcast({cmd: 'info', text: "Server broadcast: " + text})
 	},
-}
 
+	startGame: function(args) {
+		var gameObject = DUNGEONMASTER.createGame(args)
+		broadcast({cmd: 'startGame',gameObject: gameObject, text: args.players[0] + " is playing " + args.players[1] + " at " + args.type})
+	},
+
+	updateGame: function(args) {
+		args.nick = this.nick
+		var gameObject = DUNGEONMASTER.updateGame(args)
+		broadcast({cmd: 'updateGame',gameObject: gameObject, text: args.nick + " made a move "})
+	},
+}
 
 // rate limiter
 var POLICE = {
@@ -423,6 +434,59 @@ var POLICE = {
 		if (record) {
 			record.arrested = false
 		}
+	},
+}
+
+var DUNGEONMASTER = {
+	gamelist: {
+		tictactoe: {
+			positions: [],
+			moveCount: 0,
+			playerTurn: 0
+		}
+	},
+	createGame: function(args) {
+		var gameObject = {}
+		var randomPlusDate = Math.floor((Math.random() * 9999999) + 1) + "" + Date.now()
+		gameObject.id = randomPlusDate
+		gameObject.expiryDate = Date.now() + 172800000 // Set to expire in 2 days for now
+		gameObject.body = this.gamelist[args.type]
+		gameObject.players = args.players
+		gameObject.type = args.type
+
+		fs.writeFile("games/"+randomPlusDate+".json", JSON.stringify(gameObject), function(err) {
+      if(err) return console.log(err)
+      console.log("Game "+randomPlusDate+" was created.");
+    })
+
+    return gameObject
+	},
+	loadGame: function(args) {
+		var text = fs.readFileSync("games/"+args.id+".json", 'utf8')
+		return JSON.parse(text)
+	},
+	updateGame: function(args) {
+
+    var gameObject = this.loadGame(args)
+		if(gameObject.body.playerTurn === 0) {
+			gameObject.body.positions[args.move] = "x"
+			gameObject.body.playerTurn = 1
+		}
+		else{
+			gameObject.body.positions[args.move] = "o"
+			gameObject.body.playerTurn = 0
+		}
+
+		gameObject.body.moveCount++
+
+		fs.writeFile("games/"+args.id+".json", JSON.stringify(gameObject), function(err) {
+			if(err) return console.log(err)
+			console.log("Game "+args.move+" was updated: " + gameObject.body.positions)
+		})
+		return gameObject
+	},
+	cleanUpOldGames: function(filename) {
+		// Check if games have expired and delete associated files
 	},
 }
 

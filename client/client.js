@@ -140,6 +140,14 @@ var COMMANDS = {
 			pushMessage({nick: '*', text: nick + " left"})
 		}
 	},
+	startGame: function(args) {
+		addGameCanvas(args)
+		args.nick = '*'
+		pushMessage(args)
+	},
+	updateGame: function(args) {
+		addGameCanvas(args)
+	}
 }
 
 
@@ -147,7 +155,7 @@ function pushMessage(args) {
 	// Message container
 	var messageEl = document.createElement('div')
 	messageEl.classList.add('message')
-	
+
 	if (args.nick == myNick) {
 		messageEl.classList.add('me')
 	}
@@ -196,7 +204,6 @@ function pushMessage(args) {
 	textEl.innerHTML = textEl.innerHTML.replace(/(\?|https?:\/\/)\S+?(?=[,.!?:)]?\s|$)/g, parseLinks)
 
 	if ($('#parse-latex').checked) {
-		// Temporary hotfix for \rule spamming, see https://github.com/Khan/KaTeX/issues/109
 		textEl.innerHTML = textEl.innerHTML.replace(/\\rule|\\\\\s*\[.*?\]/g, '')
 		try {
 			renderMathInElement(textEl, {delimiters: [
@@ -236,6 +243,7 @@ function insertAtCursor(text) {
 
 
 function send(data) {
+	console.log("sending data to server: " + JSON.stringify(data))
 	if (ws && ws.readyState == ws.OPEN) {
 		ws.send(JSON.stringify(data))
 	}
@@ -438,7 +446,8 @@ function userAdd(nick) {
 	var user = document.createElement('a')
 	user.textContent = nick
 	user.onclick = function(e) {
-		userInvite(nick)
+		if($('#user-actions').value!='invite') challenge(nick, $('#user-actions').value)
+    else if($('#user-actions').value=='invite') userInvite(nick)
 	}
 	var userLi = document.createElement('li')
 	userLi.appendChild(user)
@@ -517,6 +526,16 @@ schemes.forEach(function(scheme) {
 	$('#scheme-selector').appendChild(option)
 })
 
+var userActions = ['tictactoe','invite']
+
+// Add user actions to dropdown
+userActions.forEach(function(action) {
+	var option = document.createElement('option')
+	option.textContent = action
+	option.value = action
+	$('#user-actions').appendChild(option)
+})
+
 $('#scheme-selector').onchange = function(e) {
 	setScheme(e.target.value)
 }
@@ -538,4 +557,178 @@ if (myChannel == '') {
 }
 else {
 	join(myChannel)
+}
+
+/* game mod */
+
+function challenge(nick,type) {
+	if(nick == myNick){
+	  alert("can't challenge self")
+	} else {
+		var playPrompt = confirm("challenge " + nick + " to " + type)
+	  if(playPrompt) send({cmd: 'startGame', type: type, players: [myNick, nick] })
+	}
+}
+
+function addGameCanvas(args) {
+
+  // If game already exists remove
+	if($('#game'+args.gameObject.id)){
+		$('#game'+args.gameObject.id).parentNode.removeChild($('#game'+args.gameObject.id))
+	}
+  var messageEl = document.createElement('div')
+  messageEl.classList.add('WASmessage')
+  messageEl.innerHTML = "<div id='game"+args.gameObject.id+"'><canvas id='canvas"+args.gameObject.id+"' width='300' height='300'></canvas><div id='game"+args.gameObject.id+"-msg'></div></div>"
+
+	// Scroll to bottom
+	var atBottom = isAtBottom()
+	$('#messages').appendChild(messageEl)
+	if (atBottom) {
+		window.scrollTo(0, document.body.scrollHeight)
+	}
+
+  unread += 1
+  updateTitle()
+
+  updateTicTacToe(args)
+}
+
+function updateTicTacToe(args) {
+  var ctx = document.getElementById("canvas"+args.gameObject.id).getContext('2d')
+
+	function Grid() {
+	    this._positions = args.gameObject.body.positions;
+	    this._moveCount = args.gameObject.body.moveCount;
+	    this.draw();
+	}
+	(function(Grid, callback) {
+	    Math.TWO_PI = Math.PI * 2;
+	    ctx.lineWidth = 5;
+
+	    Grid.p = Grid.prototype;
+
+	    Grid.p.draw = function() {
+	        var i = 0, x, y, pos;
+	        ctx.beginPath();
+	        for (; i < 2; i++) {
+	            x = 100 + 100*i;
+	            ctx.moveTo(x, 0);
+	            ctx.lineTo(x, 300);
+	        }
+	        for (i = 0; i < 2; i++) {
+
+	            y = 100 + 100*i;
+	            ctx.moveTo(0, y);
+	            ctx.lineTo(300, y);
+	        }
+
+	        ctx.strokeStyle = '#000000';
+	        ctx.stroke();
+	        ctx.closePath();
+
+	        pos = this._positions;
+	        for (i = 0; i < 9; i ++) {
+	            x = i % 3 | 0;
+	            y = i / 3 | 0;
+	            if (pos[i] === 'x') {
+	                drawX(x, y);
+	            } else if (pos[i] === 'o') {
+	                drawO(x, y);
+	            }
+	        }
+
+					if (this._checkVictory()=='x') {
+						args.nick = '*'
+						args.text = args.gameObject.players[0] + " beat " + args.gameObject.players[1] + " at tic-tac-toe"
+						pushMessage(args)
+						$('#game'+args.gameObject.id).parentNode.removeChild($('#game'+args.gameObject.id))
+					} else if (this._checkVictory()=='o'){
+						args.nick = '*'
+						args.text = args.gameObject.players[1] + " beat " + args.gameObject.players[0] + " at tic-tac-toe"
+						pushMessage(args)
+						$('#game'+args.gameObject.id).parentNode.removeChild($('#game'+args.gameObject.id))
+					} else if (this._checkDraw()) {
+						args.nick = '*'
+						args.text = args.gameObject.players[1] + " tied " + args.gameObject.players[0] + " at tic-tac-toe"
+						pushMessage(args)
+						$('#game'+args.gameObject.id).parentNode.removeChild($('#game'+args.gameObject.id))
+					}
+	    }
+
+	    Grid.p.isMarkedCell = function(x, y) {
+				  if(this._positions[(y * 3) + x] == 'x' || this._positions[(y * 3) + x] == 'o') return true
+					else return false
+	        //return typeof this._positions[(y * 3) + x] !== 'undefined';
+	    }
+
+	    Grid.p.isMarkedCellWith = function(x, y, symbol) {
+	        return this._positions[(y * 3) + x] == symbol;
+	    }
+
+	    Grid.p._checkVictory = function() {
+				var winningCombinations = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
+				var combLength = 0
+				for (var i in winningCombinations) {
+				  if(this._positions[winningCombinations[i][0]] == this._positions[winningCombinations[i][1]] && this._positions[winningCombinations[i][1]] == this._positions[winningCombinations[i][2]] && this._positions[winningCombinations[i][0]]) {
+						return this._positions[winningCombinations[i][0]]
+						break
+					}
+				}
+	    }
+
+	    Grid.p._checkDraw = function() {
+	      return this._moveCount == 9;
+	    };
+
+	    function drawX(cellX, cellY) {
+	        var i = 0, dx, dy;
+	        ctx.beginPath();
+	        for (i = 0; i < 2; i++) {
+	            dx = (cellX * 100) + 10 + (80*i);
+	            dy = (cellY * 100) + 10;
+	            ctx.moveTo(dx, dy);
+	            dx = (cellX * 100) + 90 - (80*i);
+	            dy = (cellY * 100) + 90;
+	            ctx.lineTo(dx, dy);
+	        }
+	        ctx.strokeStyle = '#3333ff';
+	        ctx.stroke();
+	        ctx.closePath();
+	    }
+
+	    function drawO (cellX, cellY) {
+	        ctx.beginPath();
+	        ctx.arc(cellX*100 + 50,
+	                cellY*100 + 50,
+	                40, 0, Math.TWO_PI, false);
+	        ctx.strokeStyle = '#ff3333';
+	        ctx.stroke();
+	        ctx.closePath();
+	    }
+			callback()
+	})(Grid, addGameListner);
+
+	gameGrid = new Grid()
+	playerTurn = args.gameObject.body.playerTurn // player 1 ('X') plays first
+
+  function addGameListner() {
+		$("#canvas"+args.gameObject.id).addEventListener("click",canvasClicked)
+	}
+
+	function canvasClicked(e) {
+		var x, y;
+		x = e.offsetX / 100 | 0
+		y = e.offsetY / 100 | 0
+
+		if (!gameGrid.isMarkedCell(x, y)) {
+
+			if (args.gameObject.players[playerTurn] == myNick ) {
+				var chosenSquare = (y * 3) + x
+				send({cmd: 'updateGame', id: args.gameObject.id, move: chosenSquare})
+			} else {
+				alert("Not your turn")
+			}
+		}
+	}
+
 }
