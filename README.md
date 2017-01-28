@@ -1,7 +1,7 @@
 ### Hack.chat.games MOD
-* `adds real-time gaming in chat room`
-* `currently only tic-tac-toe (chess soon?)`
-* `hover on right side and click another user's name to start game`
+* adds real-time gaming in chat room
+* currently only tic-tac-toe (chess soon?)
+* hover on right side and click another user's name to start game
 
 [![hack.chat screenshot](https://raw.githubusercontent.com/kirkins/hack.chat.games/master/screenshot.png)](https://youtu.be/NwusOLDp60s?t=5s)
 
