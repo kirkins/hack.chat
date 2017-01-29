@@ -12,7 +12,7 @@
 node v0.12 or higher is required to run the server.
 
 * `git clone https://github.com/kirkins/hack.chat.games.git`
-* `cd hack.chat`
+* `cd hack.chat.games`
 * `npm install`
 * Copy `config-sample.json` to `config.json` and edit if needed.
 * `npm start` or `node server.js`
