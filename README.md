@@ -1,4 +1,4 @@
-Note: hack.chat currently works with node versions 0.12.0 to 0.12.18
+<i>Note: Versions above 0.12.18 throw an error but still work</i>
 ### Hack.chat.games MOD
 * adds real-time gaming in chat room
 * currently only tic-tac-toe (chess soon?)
