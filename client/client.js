@@ -446,8 +446,8 @@ function userAdd(nick) {
 	var user = document.createElement('a')
 	user.textContent = nick
 	user.onclick = function(e) {
-		if($('#user-actions').value!='invite') challenge(nick, $('#user-actions').value)
-    else if($('#user-actions').value=='invite') userInvite(nick)
+	  if($('#user-actions').value!='invite') challenge(nick, $('#user-actions').value)
+          else if($('#user-actions').value=='invite') userInvite(nick)
 	}
 	var userLi = document.createElement('li')
 	userLi.appendChild(user)
