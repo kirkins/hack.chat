@@ -204,6 +204,7 @@ function pushMessage(args) {
     textEl.innerHTML = textEl.innerHTML.replace(/(\?|https?:\/\/)\S+?(?=[,.!?:)]?\s|$)/g, parseLinks)
 
     if ($('#parse-latex').checked) {
+      // Temporary hotfix for \rule spamming, see https://github.com/Khan/KaTeX/issues/109
       textEl.innerHTML = textEl.innerHTML.replace(/\\rule|\\\\\s*\[.*?\]/g, '')
         try {
           renderMathInElement(textEl, {delimiters: [
@@ -226,7 +227,7 @@ function pushMessage(args) {
     }
 
   unread += 1
-    updateTitle()
+  updateTitle()
 }
 
 
@@ -251,15 +252,12 @@ function send(data) {
 
 
 function parseLinks(g0) {
-  var a = document.createElement('a')
-    a.innerHTML = g0
-    var url = a.textContent
-    if (url[0] == '?') {
-      url = "/" + url
-    }
-  a.href = url
-    a.target = '_blank'
-    return a.outerHTML
+	var a = document.createElement('a')
+	a.innerHTML = g0
+	var url = a.textContent
+	a.href = url
+	a.target = '_blank'
+	return a.outerHTML
 }
 
 
